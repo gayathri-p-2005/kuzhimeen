@@ -200,3 +200,161 @@ async function getImageDescription(base64ImageData) {
             if (!response.ok) {
                 if (response.status === 429) {
                     const delay = baseDelay * Math.pow(2, retries);
+                    console.warn(`Rate limit hit. Retrying in ${delay / 1000}s...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    retries++;
+                    continue;
+                }
+                lastError = `API error: ${response.status} ${response.statusText}`;
+                throw new Error(lastError);
+            }
+
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                return result.candidates[0].content.parts[0].text;
+            } else {
+                lastError = "Unexpected API response structure.";
+                console.error("Unexpected API response structure:", result);
+                return "No potholes detected.";
+            }
+        } catch (error) {
+            console.error("Error calling Gemini API:", error);
+            lastError = error.message;
+            if (retries < maxRetries - 1) {
+                const delay = baseDelay * Math.pow(2, retries);
+                console.warn(`API call failed. Retrying in ${delay / 1000}s...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+            retries++;
+        }
+    }
+
+    const fallbackCount = Math.floor(Math.random() * 4) + 2;
+    const sarcasticMessage = `AI's Raw Report (For Our Eyes Only):\nOur highly-advanced AI's pothole detection algorithm failed to find any. It seems the potholes are so expertly camouflaged that they are invisible to the digital eye. We estimate there are around ${fallbackCount} potholes lurking under the perfect road surface.`;
+    return sarcasticMessage;
+}
+
+function calculateFishCount(llmResponse, selectedFishType) {
+    let potholes = [];
+
+    const regex = /(\d+)\s*(?:small|medium|large)?\s*pothole(?:s)?/gi;
+    let match;
+    while ((match = regex.exec(llmResponse)) !== null) {
+        const count = parseInt(match[1]);
+        const size = (match[2] || 'medium').toLowerCase();
+        for (let i = 0; i < count; i++) {
+            potholes.push({ size: size });
+        }
+    }
+
+    if (potholes.length === 0) {
+        const individualSizeMatches = llmResponse.matchAll(/(small|medium|large) pothole/gi);
+        for (const match of individualSizeMatches) {
+            potholes.push({ size: match[1].toLowerCase() });
+        }
+    }
+
+    if (potholes.length === 0) {
+        const fallbackCount = Math.floor(Math.random() * 4) + 2;
+        console.log(`(Sarcastic Fallback): The AI's vision is failing. We've detected ${fallbackCount} invisible potholes.`);
+
+        for (let i = 0; i < fallbackCount; i++) {
+            potholes.push({ size: 'medium' });
+        }
+    }
+
+    let totalPotholeVolume = 0;
+    potholes.forEach(pothole => {
+        totalPotholeVolume += POTHOLE_VOLUME_UNITS[pothole.size] || 0;
+    });
+
+    const fishVolume = FISH_VOLUMES[selectedFishType] || FISH_VOLUMES.guppy;
+    const totalFish = Math.floor(totalPotholeVolume / fishVolume);
+    const avgFishPerPothole = potholes.length > 0 ? (totalFish / potholes.length).toFixed(2) : 0;
+
+    return {
+        numPotholes: potholes.length,
+        avgFishPerPothole: parseFloat(avgFishPerPothole),
+        totalFish: totalFish
+    };
+}
+
+function downloadReport() {
+    const reportContent = `
+    --- Thrissur's Aquatic Infrastructure Report ---
+
+    AI's Raw Report:
+    ${rawReportContent.textContent}
+
+    --- Analysis Results ---
+
+    Total Potholes Detected: ${numPotholesSpan.textContent}
+    Average ${fishTypeDisplayAvg.textContent} per Pothole: ${avgFishPerPotholeSpan.textContent}
+    Total ${fishTypeDisplayTotal.textContent} Population Potential: ${totalFishSpan.textContent}
+
+    Disclaimer: This report is purely for satirical purposes and does not reflect actual road conditions or fish populations.
+    Any resemblance to real-world infrastructure is purely coincidental (or perhaps, sadly, not).
+
+    --------------------------------------------
+    `;
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pothole_report.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+
+analyzeBtn.addEventListener('click', async () => {
+    if (!uploadedImageBase64) {
+        showMessageBox('Please upload an image of the road first!');
+        return;
+    }
+
+    showLoadingOverlay();
+    rawReportSection.classList.add('hidden');
+
+    const selectedFishType = fishTypeSelect.value;
+
+    try {
+        const llmResponse = await getImageDescription(uploadedImageBase64);
+        console.log("LLM Raw Response:", llmResponse);
+        rawReportContent.textContent = llmResponse;
+        rawReportSection.classList.remove('hidden');
+
+        const results = calculateFishCount(llmResponse, selectedFishType);
+
+        numPotholesSpan.textContent = results.numPotholes;
+        avgFishPerPotholeSpan.textContent = results.avgFishPerPothole;
+        totalFishSpan.textContent = results.totalFish;
+        fishTypeDisplayAvg.textContent = fishTypeSelect.options[fishTypeSelect.selectedIndex].text.split(' ')[0];
+        fishTypeDisplayTotal.textContent = fishTypeSelect.options[fishTypeSelect.selectedIndex].text.split(' ')[0];
+
+        resultsSection.classList.remove('hidden');
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        downloadBtn.onclick = downloadReport;
+
+    } catch (error) {
+        console.error("Analysis failed:", error);
+        showMessageBox('An error occurred during analysis. Please try again. (Our AI is sometimes as confused as Thrissur traffic.)');
+    } finally {
+        hideLoadingOverlay();
+    }
+});
+
+fishTypeSelect.addEventListener('change', () => {
+    fishTypeDisplayAvg.textContent = fishTypeSelect.options[fishTypeSelect.selectedIndex].text.split(' ')[0];
+    fishTypeDisplayTotal.textContent = fishTypeSelect.options[fishTypeSelect.selectedIndex].text.split(' ')[0];
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    fishTypeSelect.dispatchEvent(new Event('change'));
+});
+
