@@ -1,0 +1,133 @@
+/* Custom CSS for Thrissur Pothole Fish Finder */
+
+/* General Body Styling - Overrides Tailwind defaults for specific elements if needed */
+body {
+    font-family: 'Inter', sans-serif; /* Default font for the app */
+    /* Background gradient is applied directly in HTML body tag using Tailwind classes */
+}
+
+/* Custom font for titles to give a sarcastic/playful vibe */
+h1, h2 {
+    font-family: 'Permanent Marker', cursive;
+}
+
+/* Specific font for the intro page title */
+#intro-page h1 {
+    font-family: 'Concert One', cursive;
+}
+
+/* Loader animation for the loading overlay */
+.loader {
+    border-top-color: #3498db; /* Blue color for the top border */
+    -webkit-animation: spin 1.5s linear infinite; /* Safari */
+    animation: spin 1.5s linear infinite;
+}
+
+/* Keyframe animation for the loader */
+@-webkit-keyframes spin {
+    0% { -webkit-transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Pothole water ripple effect */
+/* This creates a subtle pulsing effect to make the pothole look like it has water */
+.animate-pulse-slow {
+    animation: pulse-slow 3s infinite ease-in-out;
+}
+
+@keyframes pulse-slow {
+    0%, 100% { transform: scale(1); opacity: 0.2; }
+    50% { transform: scale(1.1); opacity: 0.4; }
+}
+
+/* Specific styling for the fish icon to make it more prominent and interactive */
+#fish {
+    font-size: 6rem; /* Larger fish */
+    user-select: none; /* Prevent text selection on drag */
+    -webkit-user-drag: element; /* Allow dragging the element */
+    position: relative; /* Needed for z-index to work */
+    z-index: 10; /* Ensure fish is above other elements */
+}
+
+/* Styling for the image preview area */
+#image-preview {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    cursor: pointer; /* Indicate it's clickable */
+}
+
+/* Hide the default file input button */
+input[type="file"] {
+    display: none;
+}
+
+/* Custom styling for the file input label to make it look like a button */
+label[for="image-upload"] {
+    cursor: pointer;
+    display: inline-flex; /* Allows icon and text to sit nicely */
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px; /* Full rounded corners */
+    background-color: #10B981; /* Green background */
+    color: white;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+label[for="image-upload"]:hover {
+    background-color: #059669; /* Darker green on hover */
+}
+
+/* Ensure images within the preview fit well */
+#image-preview img {
+    display: block; /* Ensure image takes up space */
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Contain the image within its box */
+}
+
+/* General button styling for analyze button */
+#analyze-btn {
+    /* Tailwind classes handle most of this, but adding a subtle border for extra pop */
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Pothole Drop Target - Ensure children don't block drop events */
+#pothole span,
+#pothole div {
+    /* This is crucial! It allows drag events to pass through to the parent #pothole */
+    pointer-events: none;
+}
+
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    #intro-page, #main-app-page {
+        padding: 1.5rem; /* Smaller padding on mobile */
+    }
+
+    h1 {
+        font-size: 2.5rem; /* Smaller heading on mobile */
+    }
+
+    #fish {
+        font-size: 4rem; /* Smaller fish on mobile */
+    }
+
+    #pothole {
+        width: 12rem; /* Smaller pothole on mobile */
+        height: 12rem;
+    }
+
+    .grid-cols-1 {
+        grid-template-columns: 1fr; /* Stack columns on mobile */
+    }
+}
